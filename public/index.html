@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>S3 File Manager</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #444;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .upload-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="file"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      flex: 1;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      background: #4CAF50;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul li {
+      padding: 10px;
+      margin-bottom: 6px;
+      background: #f0f4f8;
+      border-radius: 8px;
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
+
+    ul li:hover {
+      transform: translateX(5px);
+      background: #e0ebf5;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">📂 S3 File Manager</div>
+
+    <h2>Upload File</h2>
+    <div class="upload-section">
+      <input type="file" id="fileInput">
+      <button onclick="uploadFile()">Upload</button>
+    </div>
+
+    <h2>Files in S3</h2>
+    <ul id="fileList"></ul>
+  </div>
+
+  <script>
+    // Fetch and display files
+    async function fetchFiles() {
+      try {
+        const res = await fetch("/api/files");
+        const data = await res.json();
+        const listEl = document.getElementById("fileList");
+        listEl.innerHTML = "";
+
+        if (Array.isArray(data)) {
+          data.forEach(file => {
+            const li = document.createElement("li");
+            li.textContent = file;
+            listEl.appendChild(li);
+          });
+        } else {
+          console.error("API returned error:", data);
+          listEl.innerHTML = `<li class="error">Error: ${data.error}</li>`;
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    }
+
+    // Upload file
+    async function uploadFile() {
+      const input = document.getElementById("fileInput");
+      if (input.files.length === 0) {
+        alert("Please select a file first");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", input.files[0]);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Upload successful!");
+          fetchFiles(); // reload list
+        } else {
+          alert("❌ Upload failed: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
+    }
+
+    // Load files on page load
+    fetchFiles();
+  </script>
+</body>
+</html>
